@@ -1,0 +1,34 @@
+{
+  "name": "spawn-server-webpack-plugin",
+  "description": "Webpack plugin for automatically starting a node server from memory after building.",
+  "version": "1.0.0",
+  "author": "Dylan Piercey <pierceydylan@gmail.com>",
+  "bin": "index.js",
+  "bugs": "https://github.com/DylanPiercey/spawn-server-webpack-plugin/issues",
+  "devDependencies": {
+    "snazzy": "^6.0.0",
+    "standard": "^9.0.2",
+    "supertest": "^3.0.0",
+    "tap-spec": "^4.1.1",
+    "tape": "^4.6.3",
+    "webpack": "^2.3.3"
+  },
+  "homepage": "https://github.com/DylanPiercey/spawn-server-webpack-plugin",
+  "keywords": [
+    "webpack",
+    "spawn-server-webpack-plugin",
+    "server"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DylanPiercey/spawn-server-webpack-plugin"
+  },
+  "scripts": {
+    "test": "standard --verbose | snazzy && tape ./**/*.test.js | tap-spec"
+  },
+  "dependencies": {
+    "memory-fs": "^0.4.1"
+  }
+}

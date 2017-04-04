@@ -1,0 +1,9 @@
+# Editors
+*.sublime*
+.vscode
+
+# OSX
+*.DS_Store
+
+# Node
+node_modules
