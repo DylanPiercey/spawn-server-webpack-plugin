@@ -2,6 +2,7 @@
 
 var cp = require('child_process')
 var path = require('path')
+var exitHook = require('exit-hook')
 var MemoryFS = require('memory-fs')
 
 // Expose plugin.
@@ -16,10 +17,7 @@ function SpawnServerPlugin (options) {
   this.options = options
   this.reload = this.reload.bind(this)
   this.cleanup = this.cleanup.bind(this)
-  process
-    .on('SIGINT', this.cleanup)
-    .on('SIGTERM', this.cleanup)
-    .on('exit', this.cleanup)
+  exitHook(this.cleanup)
 }
 
 // Starts plugin.

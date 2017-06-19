@@ -6,12 +6,12 @@
   "bin": "index.js",
   "bugs": "https://github.com/DylanPiercey/spawn-server-webpack-plugin/issues",
   "devDependencies": {
-    "snazzy": "^6.0.0",
-    "standard": "^9.0.2",
+    "snazzy": "^7.0.0",
+    "standard": "^10.0.2",
     "supertest": "^3.0.0",
     "tap-spec": "^4.1.1",
     "tape": "^4.6.3",
-    "webpack": "^2.3.3"
+    "webpack": "^2.6.1"
   },
   "homepage": "https://github.com/DylanPiercey/spawn-server-webpack-plugin",
   "keywords": [
@@ -29,6 +29,7 @@
     "test": "standard --verbose | snazzy && tape ./**/*.test.js | tap-spec"
   },
   "dependencies": {
+    "exit-hook": "^1.1.1",
     "memory-fs": "^0.4.1"
   }
 }
