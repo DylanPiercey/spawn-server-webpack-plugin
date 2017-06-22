@@ -2,8 +2,9 @@
 
 var cp = require('child_process')
 var path = require('path')
+var nativeFs = require('fs')
 var exitHook = require('exit-hook')
-var MemoryFS = require('memory-fs')
+function noop () {}
 
 // Expose plugin.
 module.exports = SpawnServerPlugin
@@ -27,8 +28,6 @@ SpawnServerPlugin.prototype.apply = function (compiler) {
   compiler.plugin('watch-run', function (_, done) {
     // Track watch mode.
     compiler.__IS_WATCHING__ = true
-    // Force memory file system.
-    if (!isMemoryFS(compiler.outputFileSystem)) compiler.outputFileSystem = new MemoryFS()
     done()
   })
 }
@@ -38,6 +37,7 @@ SpawnServerPlugin.prototype.reload = function (stats) {
   var compiler = stats.compilation.compiler
   var options = compiler.options
   var fs = compiler.outputFileSystem
+  if (!fs.createReadStream) fs = nativeFs
 
   // Only runs in watch mode.
   if (!compiler.__IS_WATCHING__) return
@@ -66,11 +66,3 @@ SpawnServerPlugin.prototype.cleanup = function (done) {
   this.process.kill()
   this.process = null
 }
-
-// Check if a filesystem is in memory.
-function isMemoryFS (fs) {
-  return fs.constructor.name === 'MemoryFileSystem'
-}
-
-// Does nothing.
-function noop () {}
