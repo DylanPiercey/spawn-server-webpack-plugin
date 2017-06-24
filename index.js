@@ -46,8 +46,8 @@ SpawnServerPlugin.prototype.reload = function (stats) {
   this.cleanup(function () {
     // Start new process.
     this.process = cp.spawn('node', [], {
+      env: process.env,
       cwd: options.output.path,
-      env: process.env.NODE_ENV,
       stdio: ['pipe', 'inherit', 'inherit', 'ipc']
     })
 
