@@ -29,6 +29,8 @@
     "test": "standard --verbose | snazzy && tape ./**/*.test.js | tap-spec"
   },
   "dependencies": {
-    "exit-hook": "^1.1.1"
+    "exit-hook": "^1.1.1",
+    "require-from-string": "^1.2.1",
+    "source-map-support": "^0.4.15"
   }
 }

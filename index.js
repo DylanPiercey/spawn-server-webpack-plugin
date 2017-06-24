@@ -57,7 +57,14 @@ SpawnServerPlugin.prototype.reload = function (stats) {
     var originalExec = cluster.settings.exec
     var originalArgs = cluster.settings.execArgv
     cluster.settings.exec = noopFile
-    cluster.settings.execArgv = this.options.args.concat('-e', script)
+    cluster.settings.execArgv = this.options.args.concat(
+      '-e', (
+        // Automatically load inline source maps.
+        'require("source-map-support").install({ hookRequire: true, environment: "node" });' +
+        // Load file from string (allows proper source maps during eval).
+        'require("require-from-string")(' + JSON.stringify(script) + ', ' + JSON.stringify(outFile) + ')'
+      )
+    )
 
     // Start new process.
     this.process = cluster.fork()

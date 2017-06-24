@@ -1,6 +1,8 @@
 # Spawn Server (Webpack Plugin)
 Webpack plugin for Node builds that will automatically load the build into memory when watching and restart the server on consecutive builds.
 
+This plugin also automatically supports inline source maps.
+
 # Installation
 
 #### Npm
@@ -13,13 +15,17 @@ npm install spawn-server-webpack-plugin
 var webpack = require('webpack')
 var SpawnServerPlugin = require('spawn-server-webpack-plugin')
 var spawnedServer = new SpawnServerPlugin({
-  args: ['-r', 'source-map-support/register']
+  args: [
+    '--inspect-brk',
+    '-r', 'some-file.js'
+  ]
 })
 
 // Build webpack config.
 var config = {
   name: 'Server',
   target: 'node',
+  devtool: 'cheap-module-inline-source-map',
   externals: [/^[^./!]/], // Trick to exclude node modules.
   entry: './myfile.js',
   plugins: [spawnedServer], // Use the plugin.
