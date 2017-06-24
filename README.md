@@ -1,7 +1,6 @@
 # Spawn Server (Webpack Plugin)
 Webpack plugin for Node builds that will automatically load the build into memory when watching and restart the server on consecutive builds.
 
-
 # Installation
 
 #### Npm
@@ -20,7 +19,7 @@ var config = {
   target: 'node',
   externals: [/^[^./!]/], // Trick to exclude node modules.
   entry: './myfile.js',
-  plugins: [new SpawnServerPlugin()], // Use the plugin.
+  plugins: [new SpawnServerPlugin({ args: ['-r', 'source-map-support/register'] })], // Use the plugin.
   output: {
     libraryTarget: 'commonjs2',
     filename: 'build.js',

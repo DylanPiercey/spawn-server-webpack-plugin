@@ -15,9 +15,10 @@ module.exports = SpawnServerPlugin
  * @param {object} [options]
  */
 function SpawnServerPlugin (options) {
-  this.options = options
+  this.options = options || {}
   this.reload = this.reload.bind(this)
   this.cleanup = this.cleanup.bind(this)
+  this.options.args = this.options.args || []
   exitHook(this.cleanup)
 }
 
@@ -45,7 +46,7 @@ SpawnServerPlugin.prototype.reload = function (stats) {
   // Kill existing process.
   this.cleanup(function () {
     // Start new process.
-    this.process = cp.spawn('node', [], {
+    this.process = cp.spawn('node', this.options.args, {
       env: process.env,
       cwd: options.output.path,
       stdio: ['pipe', 'inherit', 'inherit', 'ipc']
