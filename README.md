@@ -12,6 +12,9 @@ npm install spawn-server-webpack-plugin
 ```javascript
 var webpack = require('webpack')
 var SpawnServerPlugin = require('spawn-server-webpack-plugin')
+var spawnedServer = new SpawnServerPlugin({
+  args: ['-r', 'source-map-support/register']
+})
 
 // Build webpack config.
 var config = {
@@ -19,7 +22,7 @@ var config = {
   target: 'node',
   externals: [/^[^./!]/], // Trick to exclude node modules.
   entry: './myfile.js',
-  plugins: [new SpawnServerPlugin({ args: ['-r', 'source-map-support/register'] })], // Use the plugin.
+  plugins: [spawnedServer], // Use the plugin.
   output: {
     libraryTarget: 'commonjs2',
     filename: 'build.js',
@@ -32,6 +35,37 @@ webpack(config).watch({ ignore: /node_modules/ }, function (err, stats) {
   // The built node server will start running in the background.
 })
 
+// Special events (listening and closing)
+spawnedServer.on('listening', function (address) {
+  this.listening === true
+})
+
+spawnedServer.on('closing', function () {
+  this.listening === false
+})
+```
+
+### Using with webpack-dev-server
+If you are using webpack dev server and are running into 'ECONN' issues when useing the spawn server plugin then you can use the following trick to automatically recover once the server has restarted.
+
+```js
+const configs = [
+  {...}, // Browser build
+  {...} // Server build (included spawn-server-plugin)
+]
+
+new DevServer(webpack(configs), {
+  ...,
+  proxy: {
+    target: 'http://localhost:9090',
+    onError: (e, req, res) => {
+      // Automatically retry when server is restarting.
+      if (spawnedServer.listening) return
+      res.writeHead(302, { location: req.url })
+      spawnedServer.once('listening', () => res.end())
+    }
+  }
+})
 ```
 
 ### Contributions

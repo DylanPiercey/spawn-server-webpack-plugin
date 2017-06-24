@@ -1,9 +1,11 @@
 'use strict'
 
-var cp = require('child_process')
 var path = require('path')
 var nativeFs = require('fs')
+var cluster = require('cluster')
 var exitHook = require('exit-hook')
+var EventEmitter = require('events').EventEmitter
+var noopFile = path.join(__dirname, 'noop.js')
 function noop () {}
 
 // Expose plugin.
@@ -17,15 +19,17 @@ module.exports = SpawnServerPlugin
 function SpawnServerPlugin (options) {
   this.options = options || {}
   this.reload = this.reload.bind(this)
-  this.cleanup = this.cleanup.bind(this)
+  this.close = this.close.bind(this)
   this.options.args = this.options.args || []
-  exitHook(this.cleanup)
+  exitHook(this.close)
 }
+
+SpawnServerPlugin.prototype = Object.create(EventEmitter.prototype)
 
 // Starts plugin.
 SpawnServerPlugin.prototype.apply = function (compiler) {
   compiler.plugin('done', this.reload)
-  compiler.plugin('watch-close', this.cleanup)
+  compiler.plugin('watch-close', this.close)
   compiler.plugin('watch-run', function (_, done) {
     // Track watch mode.
     compiler.__IS_WATCHING__ = true
@@ -44,25 +48,36 @@ SpawnServerPlugin.prototype.reload = function (stats) {
   if (!compiler.__IS_WATCHING__) return
 
   // Kill existing process.
-  this.cleanup(function () {
-    // Start new process.
-    this.process = cp.spawn('node', this.options.args, {
-      env: process.env,
-      cwd: options.output.path,
-      stdio: ['pipe', 'inherit', 'inherit', 'ipc']
-    })
-
+  this.close(function () {
     // Load script from memory.
     var outFile = path.join(options.output.path, options.output.filename)
-    var script = fs.createReadStream(outFile, 'utf8')
-    script.pipe(this.process.stdin)
+    var script = fs.readFileSync(outFile, 'utf8')
+
+    // Update cluster settings to load empty file and use provided args.
+    var originalExec = cluster.settings.exec
+    var originalArgs = cluster.settings.execArgv
+    cluster.settings.exec = noopFile
+    cluster.settings.execArgv = this.options.args.concat('-e', script)
+
+    // Start new process.
+    this.process = cluster.fork()
+    this.process.once('listening', function onListening (address) {
+      this.listening = true
+      this.emit('listening', address)
+    }.bind(this))
+
+    // Reset cluster settings.
+    cluster.settings.exec = originalExec
+    cluster.settings.execArgv = originalArgs
   }.bind(this))
 }
 
 // Kills any running child process.
-SpawnServerPlugin.prototype.cleanup = function (done) {
+SpawnServerPlugin.prototype.close = function (done) {
   done = done || noop
+  this.listening = false
   if (!this.process) return done()
+  this.emit('closing')
   this.process.once('exit', done)
   this.process.kill()
   this.process = null
