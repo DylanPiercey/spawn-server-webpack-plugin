@@ -50,20 +50,43 @@ SpawnServerPlugin.prototype.reload = function (stats) {
   // Kill existing process.
   this.close(function () {
     // Load script from memory.
+    var assets = stats.compilation.assets
     var outFile = path.join(options.output.path, options.output.filename)
-    var script = fs.readFileSync(outFile, 'utf8')
 
     // Update cluster settings to load empty file and use provided args.
     var originalExec = cluster.settings.exec
     var originalArgs = cluster.settings.execArgv
     cluster.settings.exec = noopFile
+
+    // Creates an IIFE that automatically intercepts require calls and uses in memory data.
     cluster.settings.execArgv = this.options.args.concat(
-      '-e', (
+      '-e', '(' + function (entry, assets) {
         // Automatically load inline source maps.
-        'require("source-map-support").install({ hookRequire: true, environment: "node" });' +
-        // Load file from string (allows proper source maps during eval).
-        'require("require-from-string")(' + JSON.stringify(script) + ', ' + JSON.stringify(outFile) + ')'
-      )
+        require('source-map-support').install({ hookRequire: true, environment: 'node' })
+
+        // Monkey patch asset loading.
+        var fs = require('fs')
+
+        // Patches target 'node' System.import calls.
+        var readFileSync = fs.readFileSync
+        fs.readFileSync = function (file) {
+          return assets[file] || readFileSync.apply(this, arguments)
+        }
+
+        // Patches target 'async-node' System.import calls.
+        var readFile = fs.readFile
+        fs.readFile = function (file) {
+          if (!assets[file]) return readFile.apply(this, arguments)
+          var cb = arguments[arguments.length - 1]
+          setImmediate(function () { cb(null, assets[file]) })
+        }
+
+        // Load entry file from assets.
+        require(entry)
+      }.toString() + ')(' +
+        JSON.stringify(outFile) + ', ' +
+        JSON.stringify(toSources(assets)) +
+      ')'
     )
 
     // Start new process.
@@ -88,4 +111,19 @@ SpawnServerPlugin.prototype.close = function (done) {
   this.process.once('exit', done)
   this.process.kill()
   this.process = null
+}
+
+/**
+ * Converts webpack assets into a searchable map.
+ */
+function toSources (assets) {
+  var result = {}
+  var asset
+
+  for (var key in assets) {
+    asset = assets[key]
+    result[asset.existsAt] = asset.source()
+  }
+
+  return result
 }
