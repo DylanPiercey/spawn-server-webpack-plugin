@@ -66,6 +66,13 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 
         // Monkey patch asset loading.
         var fs = require('fs')
+        var Module = require('module')
+
+        // Pretend files from memory exist on disc.
+        var findPath = Module._findPath
+        Module._findPath = function (file) {
+          return (assets[file] && file) || findPath.apply(this, arguments)
+        }
 
         // Patches target 'node' System.import calls.
         var readFileSync = fs.readFileSync
