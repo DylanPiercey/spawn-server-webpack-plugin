@@ -47,6 +47,9 @@ SpawnServerPlugin.prototype.reload = function (stats) {
   // Only runs in watch mode.
   if (!compiler.__IS_WATCHING__) return
 
+  // Don't reload if there was errors.
+  if (stats.hasErrors()) return
+
   // Kill existing process.
   this.close(function () {
     // Load script from memory.
