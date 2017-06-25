@@ -28,7 +28,12 @@ var config = {
   devtool: 'cheap-module-inline-source-map',
   externals: [/^[^./!]/], // Trick to exclude node modules.
   entry: './myfile.js',
-  plugins: [spawnedServer], // Use the plugin.
+  plugins: [
+    // Support inline sourcemaps.
+    new webpack.BannerPlugin({ banner: 'require("source-map-support").install({ hookRequire: true })', raw: true }),
+    // Use the plugin.
+    spawnedServer
+  ],
   output: {
     libraryTarget: 'commonjs2',
     filename: 'build.js',

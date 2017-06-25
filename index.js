@@ -61,9 +61,6 @@ SpawnServerPlugin.prototype.reload = function (stats) {
     // Creates an IIFE that automatically intercepts require calls and uses in memory data.
     cluster.settings.execArgv = this.options.args.concat(
       '-e', '(' + function (entry, assets) {
-        // Automatically load inline source maps.
-        require('source-map-support').install({ hookRequire: true, environment: 'node' })
-
         // Monkey patch asset loading.
         var fs = require('fs')
         var Module = require('module')
