@@ -63,38 +63,7 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 
     // Creates an IIFE that automatically intercepts require calls and uses in memory data.
     cluster.settings.execArgv = this.options.args.concat(
-      '-e', 'process.on("message", ' + function (data) {
-        if (!data || data.action !== 'spawn') return
-
-        // Monkey patch asset loading.
-        var fs = require('fs')
-        var Module = require('module')
-        var entry = data.entry
-        var assets = data.assets
-
-        // Pretend files from memory exist on disc.
-        var findPath = Module._findPath
-        Module._findPath = function (file) {
-          return (assets[file] && file) || findPath.apply(this, arguments)
-        }
-
-        // Patches target 'node' System.import calls.
-        var readFileSync = fs.readFileSync
-        fs.readFileSync = function (file) {
-          return assets[file] || readFileSync.apply(this, arguments)
-        }
-
-        // Patches target 'async-node' System.import calls.
-        var readFile = fs.readFile
-        fs.readFile = function (file) {
-          if (!assets[file]) return readFile.apply(this, arguments)
-          var cb = arguments[arguments.length - 1]
-          setImmediate(function () { cb(null, assets[file]) })
-        }
-
-        // Load entry file from assets.
-        require(entry)
-      }.toString() + ')'
+      '-e', 'process.on("message", ' + onServerSpawn.toString() + ')'
     )
 
     // Start new process.
@@ -124,6 +93,45 @@ SpawnServerPlugin.prototype.close = function (done) {
   this.process.once('exit', done)
   this.process.kill()
   this.process = null
+}
+
+/**
+ * Handles the initial load message from the child process server.
+ * (Converted to a string above and sent to child process).
+ *
+ * @param {*} data - the message from the parent process
+ */
+function onServerSpawn (data) {
+  if (!data || data.action !== 'spawn') return
+
+  // Monkey patch asset loading.
+  var fs = require('fs')
+  var Module = require('module')
+  var entry = data.entry
+  var assets = data.assets
+
+  // Pretend files from memory exist on disc.
+  var findPath = Module._findPath
+  Module._findPath = function (file) {
+    return (assets[file] && file) || findPath.apply(this, arguments)
+  }
+
+  // Patches target 'node' System.import calls.
+  var readFileSync = fs.readFileSync
+  fs.readFileSync = function (file) {
+    return assets[file] || readFileSync.apply(this, arguments)
+  }
+
+  // Patches target 'async-node' System.import calls.
+  var readFile = fs.readFile
+  fs.readFile = function (file) {
+    if (!assets[file]) return readFile.apply(this, arguments)
+    var cb = arguments[arguments.length - 1]
+    setImmediate(function () { cb(null, assets[file]) })
+  }
+
+  // Load entry file from assets.
+  require(entry)
 }
 
 /**
