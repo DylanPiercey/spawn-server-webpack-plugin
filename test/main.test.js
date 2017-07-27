@@ -34,6 +34,6 @@ test('Spawn Server Plugin', function (t) {
           watcher.close()
         })
         .catch(t.fail)
-    }, 250)
+    }, 550)
   })
 })

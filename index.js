@@ -63,10 +63,14 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 
     // Creates an IIFE that automatically intercepts require calls and uses in memory data.
     cluster.settings.execArgv = this.options.args.concat(
-      '-e', '(' + function (entry, assets) {
+      '-e', 'process.on("message", ' + function (data) {
+        if (!data || data.action !== 'spawn') return
+
         // Monkey patch asset loading.
         var fs = require('fs')
         var Module = require('module')
+        var entry = data.entry
+        var assets = data.assets
 
         // Pretend files from memory exist on disc.
         var findPath = Module._findPath
@@ -90,14 +94,16 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 
         // Load entry file from assets.
         require(entry)
-      }.toString() + ')(' +
-        JSON.stringify(outFile) + ', ' +
-        JSON.stringify(toSources(assets)) +
-      ')'
+      }.toString() + ')'
     )
 
     // Start new process.
     this.process = cluster.fork()
+
+    // Send compiled javascript to child process.
+    this.process.send({ action: 'spawn', entry: outFile, assets: toSources(assets) })
+
+    // Trigger listening event once server starts.
     this.process.once('listening', function onListening (address) {
       this.listening = true
       this.emit('listening', address)
