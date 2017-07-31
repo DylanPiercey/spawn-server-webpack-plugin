@@ -21,6 +21,7 @@ function SpawnServerPlugin (options) {
   this.reload = this.reload.bind(this)
   this.close = this.close.bind(this)
   this.options.args = this.options.args || []
+  this.started = this.listening = false
   exitHook(this.close)
 }
 
@@ -67,6 +68,7 @@ SpawnServerPlugin.prototype.reload = function (stats) {
     )
 
     // Start new process.
+    this.started = true
     this.process = cluster.fork()
 
     // Send compiled javascript to child process.
@@ -87,12 +89,17 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 // Kills any running child process.
 SpawnServerPlugin.prototype.close = function (done) {
   done = done || noop
-  this.listening = false
-  if (!this.process) return done()
-  this.emit('closing')
-  this.process.once('exit', done)
-  this.process.kill()
-  this.process = null
+  if (!this.started) return done()
+  else if (this.listening) {
+    this.listening = false
+    this.process.kill()
+    this.emit('closing')
+    this.process.once('exit', this.emit.bind(this, 'start-new-server'))
+  }
+
+  // Ensure that we only start the most recent router.
+  this.removeAllListeners('start-new-server')
+  this.once('start-new-server', done)
 }
 
 /**
