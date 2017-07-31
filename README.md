@@ -46,10 +46,12 @@ webpack(config).watch({ ignore: /node_modules/ }, function (err, stats) {
 
 // Special events (listening and closing)
 spawnedServer.on('listening', function (address) {
+  this.address === { port: ..., ip: ... }
   this.listening === true
 })
 
 spawnedServer.on('closing', function () {
+  this.address === null
   this.listening === false
 })
 ```
@@ -65,14 +67,14 @@ const configs = [
 
 new DevServer(webpack(configs), {
   ...,
-  proxy: {
-    target: 'http://localhost:9090',
-    onError: (e, req, res) => {
-      // Automatically retry when server is restarting.
-      if (spawnedServer.listening) return
-      res.writeHead(302, { location: req.url })
-      spawnedServer.once('listening', () => res.end())
-    }
+  // Setup proxy to the actual server.
+  proxy: { target: 'http://localhost:9090' },
+  // Ensure webpack waits for server build before reloading.
+  setup (app) {
+    app.use((req, res, next) => {
+      if (spawnedServer.listening) next()
+      else spawnedServer.once('listening', next)
+    })
   }
 })
 ```

@@ -22,6 +22,7 @@ function SpawnServerPlugin (options) {
   this.close = this.close.bind(this)
   this.options.args = this.options.args || []
   this.started = this.listening = false
+  this.address = null
   exitHook(this.close)
 }
 
@@ -77,7 +78,8 @@ SpawnServerPlugin.prototype.reload = function (stats) {
     // Trigger listening event once server starts.
     this.process.once('listening', function onListening (address) {
       this.listening = true
-      this.emit('listening', address)
+      this.address = address
+      this.emit('listening')
     }.bind(this))
 
     // Reset cluster settings.
@@ -92,6 +94,7 @@ SpawnServerPlugin.prototype.close = function (done) {
   if (!this.started) return done()
   else if (this.listening) {
     this.listening = false
+    this.address = null
     this.process.kill()
     this.emit('closing')
     this.process.once('exit', this.emit.bind(this, 'start-new-server'))
