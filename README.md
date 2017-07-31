@@ -68,7 +68,7 @@ const configs = [
 new DevServer(webpack(configs), {
   ...,
   // Setup proxy to the actual server.
-  proxy: { target: 'http://localhost:9090' },
+  proxy: { '**': { target: 'http://localhost:8080' } },
   // Ensure webpack waits for server build before reloading.
   setup (app) {
     app.use((req, res, next) => {
@@ -76,7 +76,7 @@ new DevServer(webpack(configs), {
       else spawnedServer.once('listening', next)
     })
   }
-})
+}).listen(8081)
 ```
 
 ### Contributions
