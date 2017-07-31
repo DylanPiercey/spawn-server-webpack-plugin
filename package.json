@@ -11,7 +11,7 @@
     "supertest": "^3.0.0",
     "tap-spec": "^4.1.1",
     "tape": "^4.7.0",
-    "webpack": "^2.7.0"
+    "webpack": "^3.4.1"
   },
   "homepage": "https://github.com/DylanPiercey/spawn-server-webpack-plugin",
   "keywords": [
