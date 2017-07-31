@@ -93,7 +93,7 @@ SpawnServerPlugin.prototype.close = function (done) {
   this.emit('closing')
   this.process.once('exit', done)
   if (this.liveProcesses.length) {
-    this.liveProcesses.forEach(function (liveProcess, index) {
+    this.liveProcesses.forEach((liveProcess, index) => {
       liveProcess.kill()
       this.liveProcesses.splice(index, 1)
     })
