@@ -21,6 +21,7 @@ function SpawnServerPlugin (options) {
   this.reload = this.reload.bind(this)
   this.close = this.close.bind(this)
   this.options.args = this.options.args || []
+  this.liveProcesses = []
   exitHook(this.close)
 }
 
@@ -68,7 +69,7 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 
     // Start new process.
     this.process = cluster.fork()
-
+    this.liveProcesses.push(this.process)
     // Send compiled javascript to child process.
     this.process.send({ action: 'spawn', entry: outFile, assets: toSources(assets) })
 
@@ -91,6 +92,12 @@ SpawnServerPlugin.prototype.close = function (done) {
   if (!this.process) return done()
   this.emit('closing')
   this.process.once('exit', done)
+  if (this.liveProcesses.length) {
+    this.liveProcesses.forEach((liveProcess, index) => {
+      liveProcess.kill()
+      delete this.liveProcesses[index]
+    })
+  }
   this.process.kill()
   this.process = null
 }
