@@ -95,7 +95,7 @@ SpawnServerPlugin.prototype.close = function (done) {
   else if (this.listening) {
     this.listening = false
     this.address = null
-    this.process.kill()
+    process.kill(this.process.process.pid)
     this.emit('closing')
     this.process.once('exit', this.emit.bind(this, 'start-new-server'))
   }
