@@ -70,13 +70,13 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 
     // Start new process.
     this.started = true
-    this.process = cluster.fork()
+    this.worker = cluster.fork()
 
     // Send compiled javascript to child process.
-    this.process.send({ action: 'spawn', entry: outFile, assets: toSources(assets) })
+    this.worker.send({ action: 'spawn', entry: outFile, assets: toSources(assets) })
 
     // Trigger listening event once server starts.
-    this.process.once('listening', function onListening (address) {
+    this.worker.once('listening', function onListening (address) {
       this.listening = true
       this.address = address
       this.emit('listening')
@@ -95,9 +95,9 @@ SpawnServerPlugin.prototype.close = function (done) {
   else if (this.listening) {
     this.listening = false
     this.address = null
-    this.process.kill()
+    process.kill(this.worker.process.pid)
     this.emit('closing')
-    this.process.once('exit', this.emit.bind(this, 'start-new-server'))
+    this.worker.once('exit', this.emit.bind(this, 'start-new-server'))
   }
 
   // Ensure that we only start the most recent router.
