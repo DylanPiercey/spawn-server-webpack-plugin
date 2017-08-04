@@ -92,18 +92,19 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 SpawnServerPlugin.prototype.close = function (done) {
   done = done || noop
   if (!this.started) return done()
-  else if (this.listening) {
+
+  if (this.listening) {
     this.listening = false
     this.address = null
     this.emit('closing')
+    var startNewServer = this.emit.bind(this, 'start-new-server')
 
     // Check if we need to close the existing server.
     if (this.worker.isDead()) {
-      this.emit('start-new-server')
-      done()
+      setImmediate(startNewServer)
     } else {
       process.kill(this.worker.process.pid)
-      this.worker.once('exit', this.emit.bind(this, 'start-new-server'))
+      this.worker.once('exit', startNewServer)
     }
   }
 
