@@ -18,6 +18,7 @@ module.exports = SpawnServerPlugin
  */
 function SpawnServerPlugin (options) {
   this.options = options || {}
+  this.triggerRestart = this.emit.bind(this, 'start-new-server')
   this.reload = this.reload.bind(this)
   this.close = this.close.bind(this)
   this.options.args = this.options.args || []
@@ -97,14 +98,13 @@ SpawnServerPlugin.prototype.close = function (done) {
     this.listening = false
     this.address = null
     this.emit('closing')
-    var startNewServer = this.emit.bind(this, 'start-new-server')
 
     // Check if we need to close the existing server.
     if (this.worker.isDead()) {
-      setImmediate(startNewServer)
+      setImmediate(this.triggerRestart)
     } else {
       process.kill(this.worker.process.pid)
-      this.worker.once('exit', startNewServer)
+      this.worker.once('exit', this.triggerRestart)
     }
   }
 
