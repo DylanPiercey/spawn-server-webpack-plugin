@@ -31,12 +31,11 @@ SpawnServerPlugin.prototype = Object.create(EventEmitter.prototype)
 
 // Starts plugin.
 SpawnServerPlugin.prototype.apply = function (compiler) {
-  compiler.plugin('done', this.reload)
-  compiler.plugin('watch-close', this.close)
-  compiler.plugin('watch-run', function (_, done) {
+  compiler.hooks.done.tap('spawnedServerReload', this.reload)
+  compiler.hooks.watchClose.tap('spawnedServerClose', this.close)
+  compiler.hooks.watchRun.tap('spawnedServerTrackWatchMode', function () {
     // Track watch mode.
     compiler.__IS_WATCHING__ = true
-    done()
   })
 }
 

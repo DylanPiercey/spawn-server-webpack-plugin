@@ -11,6 +11,7 @@ test('Spawn Server Plugin', function (t) {
   t.plan(2)
 
   var watcher = webpack({
+    mode: 'development',
     name: 'Server',
     target: 'node',
     watch: true,
@@ -22,7 +23,7 @@ test('Spawn Server Plugin', function (t) {
       filename: 'spawn-webpack-server-file.js',
       path: tempDir
     }
-  }).watch({}, function (err, stats) {
+  }).watch({}, function (err) {
     if (err) return t.fail(err)
     t.pass('Should have built.')
 
