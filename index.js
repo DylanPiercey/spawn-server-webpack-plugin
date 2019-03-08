@@ -139,6 +139,12 @@ function onServerSpawn (data) {
     return assets[file] || readFileSync.apply(this, arguments)
   }
 
+  // Allows for source-map-support.
+  var existsSync = fs.existsSync;
+  fs.existsSync = function (file) {
+    return (file in assets) || existsSync.apply(this, arguments);
+  }
+
   // Patches target 'async-node' System.import calls.
   var readFile = fs.readFile
   fs.readFile = function (file) {
