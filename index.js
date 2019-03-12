@@ -93,18 +93,16 @@ SpawnServerPlugin.prototype.close = function (done) {
   done = done || noop
   if (!this.started) return done()
 
-  if (this.listening) {
-    this.listening = false
-    this.address = null
-    this.emit('closing')
+  this.listening = false
+  this.address = null
+  this.emit('closing')
 
-    // Check if we need to close the existing server.
-    if (this.worker.isDead()) {
-      setImmediate(this.triggerRestart)
-    } else {
-      process.kill(this.worker.process.pid)
-      this.worker.once('exit', this.triggerRestart)
-    }
+  // Check if we need to close the existing server.
+  if (this.worker.isDead()) {
+    setImmediate(this.triggerRestart)
+  } else {
+    process.kill(this.worker.process.pid)
+    this.worker.once('exit', this.triggerRestart)
   }
 
   // Ensure that we only start the most recent router.
