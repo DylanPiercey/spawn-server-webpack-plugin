@@ -57,13 +57,21 @@ spawnedServer.on('closing', function () {
 ```
 
 ### Using with webpack-dev-server
-If you are using webpack dev server and are running into 'ECONN' issues when using the spawn server plugin then you can use the following trick to automatically recover once the server has restarted.
+
+To automatically proxy a WebpackDevServer to the active spawned server (and to ensure that requests wait during server rebuilds) you can add the config exposed under `spawnedServerInstance.devServerConfig` into your `devServer` webpack options.
 
 ```js
 const configs = [
   {...}, // Browser build
   {...} // Server build (included spawn-server-plugin)
 ]
+
+new DevServer(webpack(configs), {
+  // Set your custom options, then spread in the spawned server config
+  ...spawnedServer.devServerConfig
+}).listen(8081)
+
+// This is approximately the same as:
 
 new DevServer(webpack(configs), {
   ...,
@@ -78,6 +86,11 @@ new DevServer(webpack(configs), {
   }
 }).listen(8081)
 ```
+
+You can also add this configuration in the same way into the `webpack.config.js` file under the `devServer` option.
+
+#### Dynamic Server Port
+Using the `devServerConfig` will automatically set `process.env.PORT = 0`. This allows for the spawned server to start on the next available port if you use this environment variable as the port option when listening.
 
 ### Contributions
 

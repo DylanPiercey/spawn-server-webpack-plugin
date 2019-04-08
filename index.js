@@ -6,6 +6,7 @@ var cluster = require('cluster')
 var exitHook = require('exit-hook')
 var EventEmitter = require('events').EventEmitter
 var noopFile = path.join(__dirname, 'noop.js')
+var PLUGIN_NAME = 'spawn-server-webpack-plugin'
 function noop () {}
 
 // Expose plugin.
@@ -24,6 +25,23 @@ function SpawnServerPlugin (options) {
   this.options.args = this.options.args || []
   this.started = this.listening = false
   this.address = null
+  this.devServerConfig = {
+    proxy: {
+      '**': {
+        target: true,
+        router: function () {
+          return 'http://[::1]' + this.address.port
+        }.bind(this)
+      }
+    },
+    before: function (app) {
+      process.env.PORT = 0
+      app.use(function (req, res, next) {
+        if (this.listening) next()
+        else this.once('listening', next)
+      }.bind(this))
+    }.bind(this)
+  }
   exitHook(this.close)
 }
 
@@ -31,9 +49,13 @@ SpawnServerPlugin.prototype = Object.create(EventEmitter.prototype)
 
 // Starts plugin.
 SpawnServerPlugin.prototype.apply = function (compiler) {
-  compiler.hooks.done.tap('spawnedServerReload', this.reload)
-  compiler.hooks.watchClose.tap('spawnedServerClose', this.close)
-  compiler.hooks.watchRun.tap('spawnedServerTrackWatchMode', function () {
+  compiler.hooks.done.tap(PLUGIN_NAME, this.reload)
+  compiler.hooks.watchClose.tap(PLUGIN_NAME, this.close)
+  compiler.hooks.make.tap(PLUGIN_NAME, function () {
+    // Mark the server as not listening while we try to rebuild.
+    this.listening = false
+  }.bind(this))
+  compiler.hooks.watchRun.tap(PLUGIN_NAME, function () {
     // Track watch mode.
     compiler.__IS_WATCHING__ = true
   })
@@ -138,9 +160,9 @@ function onServerSpawn (data) {
   }
 
   // Allows for source-map-support.
-  var existsSync = fs.existsSync;
+  var existsSync = fs.existsSync
   fs.existsSync = function (file) {
-    return (file in assets) || existsSync.apply(this, arguments);
+    return (file in assets) || existsSync.apply(this, arguments)
   }
 
   // Patches target 'async-node' System.import calls.
