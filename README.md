@@ -92,6 +92,9 @@ You can also add this configuration in the same way into the `webpack.config.js`
 #### Dynamic Server Port
 Using the `devServerConfig` will automatically set `process.env.PORT = 0`. This allows for the spawned server to start on the next available port if you use this environment variable as the port option when listening.
 
+#### Process with multiple servers
+By default this plugin will wait for the first http server to be listening and make that information available as the `address`. You can optionally provide a `waitForAppReady: true` option when instanciating the plugin and use `process.send({ event: "app-ready", address: server.address() })` within your process to signal which server should be referenced.
+
 ### Contributions
 
 * Use `npm test` to run tests.

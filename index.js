@@ -22,6 +22,7 @@ function SpawnServerPlugin (options) {
   this.triggerRestart = this.emit.bind(this, 'start-new-server')
   this.reload = this.reload.bind(this)
   this.close = this.close.bind(this)
+  this.onListening = this.onListening.bind(this)
   this.options.args = this.options.args || []
   this.started = this.listening = false
   this.address = null
@@ -97,12 +98,17 @@ SpawnServerPlugin.prototype.reload = function (stats) {
     // Send compiled javascript to child process.
     this.worker.send({ action: 'spawn', entry: outFile, assets: toSources(assets) })
 
-    // Trigger listening event once server starts.
-    this.worker.once('listening', function onListening (address) {
-      this.listening = true
-      this.address = address
-      this.emit('listening')
-    }.bind(this))
+    if (this.options.waitForAppReady) {
+      this.worker.on('message', function checkMessage (data) {
+        if (data && data.event === 'app-ready') {
+          this.onListening(data.address)
+          this.worker.removeListener('message', checkMessage)
+        }
+      }.bind(this))
+    } else {
+      // Trigger listening event once any server starts.
+      this.worker.once('listening', this.onListening)
+    }
 
     // Reset cluster settings.
     cluster.settings.exec = originalExec
@@ -130,6 +136,16 @@ SpawnServerPlugin.prototype.close = function (done) {
   // Ensure that we only start the most recent router.
   this.removeAllListeners('start-new-server')
   this.once('start-new-server', done)
+}
+
+/**
+ * Called once the spawned process has a server started/listening.
+ * Saves the server address.
+ */
+SpawnServerPlugin.prototype.onListening = function (address) {
+  this.listening = true
+  this.address = address
+  this.emit('listening')
 }
 
 /**
