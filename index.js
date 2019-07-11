@@ -31,7 +31,7 @@ function SpawnServerPlugin (options) {
       '**': {
         target: true,
         router: function () {
-          return 'http://[::1]:' + this.address.port
+          return 'http://127.0.0.1:' + this.address.port
         }.bind(this)
       }
     },
