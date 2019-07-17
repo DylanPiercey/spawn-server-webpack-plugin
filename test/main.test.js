@@ -32,9 +32,9 @@ test('Spawn Server Plugin', function (t) {
         .get('/')
         .then(function (res) {
           t.equals(res.text, 'hi', 'Should have spawned server.')
-          watcher.close()
         })
         .catch(t.fail)
+        .then(() => watcher.close())
     }, 550)
   })
 })
