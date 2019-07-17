@@ -91,7 +91,25 @@ You can also add this configuration in the same way into the `webpack.config.js`
 
 ### Multiple entry points
 Often with server side bundling you will have a single entry point for your server (and thus webpack) which works perfectly with this plugin.
-If you need to use multiple entrypoints for your webpack config for the server then you **must** include one entrypoint called `main` as this will be the one started by the plugin.
+If you need to use multiple entrypoints for your webpack config for the server then this plugin will look for an output file for the `main` entry. You can override this to use a different entry name via the `mainEntry` option to this plugin.
+
+```js
+var spawnedServer = new SpawnServerPlugin({
+  mainEntry: 'index'
+})
+
+module.exports = {
+  ...,
+  entry: {
+    index: './src/index',
+    other: './src/other'
+  },
+  ...,
+  plugins: [
+    spawnedServer
+  ]
+}
+```
 
 #### Dynamic Server Port
 Using the `devServerConfig` will automatically set `process.env.PORT = 0`. This allows for the spawned server to start on the next available port if you use this environment variable as the port option when listening.

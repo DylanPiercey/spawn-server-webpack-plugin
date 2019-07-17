@@ -23,6 +23,7 @@ function SpawnServerPlugin (options) {
   this.reload = this.reload.bind(this)
   this.close = this.close.bind(this)
   this.onListening = this.onListening.bind(this)
+  this.options.mainEntry = this.options.mainEntry || 'main'
   this.options.args = this.options.args || []
   this.started = this.listening = false
   this.address = null
@@ -78,10 +79,10 @@ SpawnServerPlugin.prototype.reload = function (stats) {
   // Kill existing process.
   this.close(function () {
     // Server is started based off files emitted from the main entry.
-    var mainChunk = stats.compilation.entrypoints.get('main')
+    var mainChunk = stats.compilation.entrypoints.get(this.options.mainEntry)
 
     if (!mainChunk) {
-      throw new Error('spawn-server-webpack-plugin: With multiple entries, the `main` entry is required to start a server')
+      throw new Error(`spawn-server-webpack-plugin: Could not find an output file for the "${this.options.mainEntry}" entry.`)
     }
 
     // Update cluster settings to load empty file and use provided args.
