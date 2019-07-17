@@ -89,6 +89,10 @@ new DevServer(webpack(configs), {
 
 You can also add this configuration in the same way into the `webpack.config.js` file under the `devServer` option.
 
+### Multiple entry points
+Often with server side bundling you will have a single entry point for your server (and thus webpack) which works perfectly with this plugin.
+If you need to use multiple entrypoints for your webpack config for the server then you **must** include one entrypoint called `main` as this will be the one started by the plugin.
+
 #### Dynamic Server Port
 Using the `devServerConfig` will automatically set `process.env.PORT = 0`. This allows for the spawned server to start on the next available port if you use this environment variable as the port option when listening.
 

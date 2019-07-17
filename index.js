@@ -77,9 +77,12 @@ SpawnServerPlugin.prototype.reload = function (stats) {
 
   // Kill existing process.
   this.close(function () {
-    // Load script from memory.
-    var assets = stats.compilation.assets
-    var outFile = path.join(options.output.path, options.output.filename)
+    // Server is started based off files emitted from the main entry.
+    var mainChunk = stats.compilation.entrypoints.get('main')
+
+    if (!mainChunk) {
+      throw new Error('spawn-server-webpack-plugin: With multiple entries, the `main` entry is required to start a server')
+    }
 
     // Update cluster settings to load empty file and use provided args.
     var originalExec = cluster.settings.exec
@@ -96,7 +99,11 @@ SpawnServerPlugin.prototype.reload = function (stats) {
     this.worker = cluster.fork()
 
     // Send compiled javascript to child process.
-    this.worker.send({ action: 'spawn', entry: outFile, assets: toSources(assets) })
+    this.worker.send({
+      action: 'spawn',
+      assets: toSources(stats.compilation.assets),
+      entry: path.join(options.output.path, mainChunk.getRuntimeChunk().files[0])
+    })
 
     if (this.options.waitForAppReady) {
       this.worker.on('message', function checkMessage (data) {
