@@ -1,7 +1,7 @@
 {
   "name": "spawn-server-webpack-plugin",
   "description": "Webpack plugin for automatically starting a node server from memory after building.",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "author": "Dylan Piercey <pierceydylan@gmail.com>",
   "bin": "index.js",
   "bugs": "https://github.com/DylanPiercey/spawn-server-webpack-plugin/issues",
