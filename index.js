@@ -40,6 +40,8 @@ function SpawnServerPlugin (options) {
     before: function (app) {
       process.env.PORT = 0
       app.use(function (req, res, next) {
+        this.pendingRequestCount++;
+
         req.once('close', function () {
           if (--this.pendingRequestCount === 0) {
             this.emit('pending-requests-closed')
