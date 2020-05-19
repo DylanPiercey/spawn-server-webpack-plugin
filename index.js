@@ -26,6 +26,7 @@ function SpawnServerPlugin (options) {
   this.options.mainEntry = this.options.mainEntry || 'main'
   this.options.args = this.options.args || []
   this.started = this.listening = false
+  this.pendingRequestCount = 0
   this.address = null
   this.devServerConfig = {
     proxy: {
@@ -39,6 +40,11 @@ function SpawnServerPlugin (options) {
     before: function (app) {
       process.env.PORT = 0
       app.use(function (req, res, next) {
+        req.once('close', function () {
+          if (--this.pendingRequestCount === 0) {
+            this.emit('pending-requests-closed')
+          }
+        }.bind(this))
         if (this.listening) next()
         else this.once('listening', next)
       }.bind(this))
@@ -129,17 +135,25 @@ SpawnServerPlugin.prototype.close = function (done) {
   done = done || noop
   if (!this.started) return done()
 
-  this.listening = false
-  this.address = null
-  this.emit('closing')
-
   // Check if we need to close the existing server.
   if (this.worker.isDead()) {
     setImmediate(this.triggerRestart)
   } else {
+    if (this.pendingRequestCount) {
+      this.once('pending-requests-closed', function () {
+        this.close(done)
+      }.bind(this))
+
+      return
+    }
+
     process.kill(this.worker.process.pid)
     this.worker.once('exit', this.triggerRestart)
   }
+
+  this.listening = false
+  this.address = null
+  this.emit('closing')
 
   // Ensure that we only start the most recent router.
   this.removeAllListeners('start-new-server')
