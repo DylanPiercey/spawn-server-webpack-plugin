@@ -48,6 +48,10 @@ function SpawnServerPlugin (options) {
             if (--this.pendingRequestCount === 0) {
               this.emit('pending-requests-closed')
             }
+
+            if (!this.listening) {
+              this.removeListener('listening', next)
+            }
           }.bind(this))
         }
         if (this.listening) next()
