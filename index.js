@@ -4,6 +4,7 @@ var path = require('path')
 var nativeFs = require('fs')
 var cluster = require('cluster')
 var exitHook = require('exit-hook')
+var onFinished = require('on-finished')
 var EventEmitter = require('events').EventEmitter
 var noopFile = path.join(__dirname, 'noop.js')
 var PLUGIN_NAME = 'spawn-server-webpack-plugin'
@@ -40,13 +41,15 @@ function SpawnServerPlugin (options) {
     before: function (app) {
       process.env.PORT = 0
       app.use(function (req, res, next) {
-        this.pendingRequestCount++;
+        if (!onFinished.isFinished(req)) {
+          this.pendingRequestCount++
 
-        req.once('close', function () {
-          if (--this.pendingRequestCount === 0) {
-            this.emit('pending-requests-closed')
-          }
-        }.bind(this))
+          onFinished(req, function () {
+            if (--this.pendingRequestCount === 0) {
+              this.emit('pending-requests-closed')
+            }
+          }.bind(this))
+        }
         if (this.listening) next()
         else this.once('listening', next)
       }.bind(this))
@@ -149,8 +152,8 @@ SpawnServerPlugin.prototype.close = function (done) {
       return
     }
 
-    process.kill(this.worker.process.pid)
     this.worker.once('exit', this.triggerRestart)
+    process.kill(this.worker.process.pid)
   }
 
   this.listening = false
