@@ -4,7 +4,6 @@ var path = require('path')
 var nativeFs = require('fs')
 var cluster = require('cluster')
 var exitHook = require('exit-hook')
-var onFinished = require('on-finished')
 var EventEmitter = require('events').EventEmitter
 var noopFile = path.join(__dirname, 'noop.js')
 var PLUGIN_NAME = 'spawn-server-webpack-plugin'
@@ -27,33 +26,30 @@ function SpawnServerPlugin (options) {
   this.options.mainEntry = this.options.mainEntry || 'main'
   this.options.args = this.options.args || []
   this.started = this.listening = false
-  this.pendingRequestCount = 0
   this.address = null
   this.devServerConfig = {
     proxy: {
       '**': {
         target: true,
+        logLevel: 'silent',
         router: function () {
           return 'http://127.0.0.1:' + this.address.port
+        }.bind(this),
+        onError: function (err, req, res) {
+          if (this.listening) {
+            console.error(err)
+          } else {
+            res.writeHead(200, {
+              Refresh: `0 url=${req.url}`
+            })
+            res.end()
+          }
         }.bind(this)
       }
     },
     before: function (app) {
       process.env.PORT = 0
       app.use(function (req, res, next) {
-        if (!onFinished.isFinished(req)) {
-          this.pendingRequestCount++
-
-          onFinished(req, function () {
-            if (--this.pendingRequestCount === 0) {
-              this.emit('pending-requests-closed')
-            }
-
-            if (!this.listening) {
-              this.removeListener('listening', next)
-            }
-          }.bind(this))
-        }
         if (this.listening) next()
         else this.once('listening', next)
       }.bind(this))
@@ -148,20 +144,11 @@ SpawnServerPlugin.prototype.close = function (done) {
   if (this.worker.isDead()) {
     setImmediate(this.triggerRestart)
   } else {
-    if (this.pendingRequestCount) {
-      this.once('pending-requests-closed', function () {
-        this.close(done)
-      }.bind(this))
-
-      return
-    }
-
     this.worker.once('exit', this.triggerRestart)
     process.kill(this.worker.process.pid)
   }
 
   this.listening = false
-  this.address = null
   this.emit('closing')
 
   // Ensure that we only start the most recent router.

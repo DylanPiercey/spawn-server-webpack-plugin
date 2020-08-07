@@ -29,7 +29,6 @@
     "test": "standard --verbose | snazzy && tape ./**/*.test.js | tap-spec"
   },
   "dependencies": {
-    "exit-hook": "^2.2.0",
-    "on-finished": "^2.3.0"
+    "exit-hook": "^2.2.0"
   }
 }
