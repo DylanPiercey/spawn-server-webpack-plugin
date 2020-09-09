@@ -3,16 +3,33 @@
   "description": "Webpack plugin for automatically starting a node server from memory after building.",
   "version": "4.0.5",
   "author": "Dylan Piercey <pierceydylan@gmail.com>",
-  "bin": "index.js",
   "bugs": "https://github.com/DylanPiercey/spawn-server-webpack-plugin/issues",
   "devDependencies": {
-    "snazzy": "^8.0.0",
-    "standard": "^14.3.4",
-    "supertest": "^4.0.2",
-    "tap-spec": "^5.0.0",
-    "tape": "^5.0.0",
-    "webpack": "^4.43.0"
+    "@commitlint/cli": "^9.1.2",
+    "@commitlint/config-conventional": "^9.1.2",
+    "@types/jest": "^26.0.13",
+    "@types/node": "^14.6.4",
+    "@types/node-fetch": "^2.5.7",
+    "@types/webpack": "^4.41.22",
+    "@typescript-eslint/eslint-plugin": "^4.1.0",
+    "@typescript-eslint/parser": "^4.1.0",
+    "codecov": "^3.7.2",
+    "eslint": "^7.8.1",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-jest": "^24.0.0",
+    "husky": "^4.3.0",
+    "jest": "^26.4.2",
+    "lint-staged": "^10.3.0",
+    "node-fetch": "^2.6.1",
+    "prettier": "^2.1.1",
+    "standard-version": "^9.0.0",
+    "ts-jest": "^26.3.0",
+    "typescript": "^4.0.2",
+    "webpack": "^4.44.1"
   },
+  "files": [
+    "dist"
+  ],
   "homepage": "https://github.com/DylanPiercey/spawn-server-webpack-plugin",
   "keywords": [
     "webpack",
@@ -20,15 +37,25 @@
     "server"
   ],
   "license": "MIT",
-  "main": "index.js",
+  "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/DylanPiercey/spawn-server-webpack-plugin"
+    "url": "DylanPiercey/spawn-server-webpack-plugin"
   },
   "scripts": {
-    "test": "standard --verbose | snazzy && tape ./**/*.test.js | tap-spec"
+    "build": "tsc -b tsconfig.dist.json && cp ./src/worker.js ./dist/worker.js",
+    "ci:report": "cat coverage/lcov.info | codecov",
+    "ci:test": "jest --ci --coverage",
+    "format": "prettier \"**/*.{json,md,js,ts}\" --write",
+    "lint": "tsc --noEmit && eslint -f codeframe --fix './src/**/*.ts'",
+    "prepublishOnly": "npm run build",
+    "release": "standard-version && git push --follow-tags origin master && npm publish",
+    "test": "jest --watch",
+    "test:inspect": "node --inspect=0.0.0.0 $(which jest) --watch --runInBand --testTimeout 99999999"
   },
+  "types": "dist/index.d.ts",
   "dependencies": {
-    "exit-hook": "^2.2.0"
+    "exit-hook": "^2.2.0",
+    "tslib": "^2.0.1"
   }
 }
