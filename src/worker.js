@@ -11,7 +11,7 @@ process.on("message", data => {
   // Pretend files from memory exist on disc.
   const findPath = Module._findPath;
   Module._findPath = function (...args) {
-    const [file] = args[0];
+    const file = args[0];
     return assets[file] === undefined ? findPath.apply(this, args) : file;
   };
   // Patches target 'node' System.import calls.
