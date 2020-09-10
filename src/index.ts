@@ -117,8 +117,6 @@ class SpawnServerPlugin extends EventEmitter {
       const originalExec = cluster.settings.exec;
       const originalArgs = cluster.settings.execArgv;
       cluster.settings.exec = WORKER_FILE;
-
-      // Creates an IIFE that automatically intercepts require calls and uses in memory data.
       cluster.settings.execArgv = this._options.args;
 
       // Start new process.
