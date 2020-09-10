@@ -126,9 +126,6 @@ class SpawnServerPlugin extends EventEmitter {
       this._worker = cluster.fork();
 
       // Send compiled javascript to child process.
-      this._worker.process.stdin?.setDefaultEncoding("utf-8");
-      this._worker.process.stdin?.write("abc");
-      this._worker.process.stdin?.end("abc");
       this._worker.send({
         action: "spawn",
         assets: toSources(stats.compilation.assets),
