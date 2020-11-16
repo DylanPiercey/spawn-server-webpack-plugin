@@ -2,12 +2,25 @@
 "use strict";
 const fs = require("fs");
 const Module = require("module");
+const PLUGIN_NAME = "spawn-server-webpack-plugin";
+let assets = {};
+
+patchModuleLoading();
 
 process.on("message", data => {
-  if (!data || data.action !== "spawn") return;
-  // Monkey patch asset loading.
-  const entry = data.entry;
-  const assets = data.assets;
+  switch (data && data.event) {
+    case `${PLUGIN_NAME}:spawn`:
+      assets = data.assets;
+      require(data.entry);
+      break;
+    case `${PLUGIN_NAME}:hmr`:
+      Object.assign(assets, data.assets);
+      global.__HMR_CHECK__();
+      break;
+  }
+});
+
+function patchModuleLoading() {
   // Pretend files from memory exist on disc.
   const findPath = Module._findPath;
   Module._findPath = function (...args) {
@@ -31,6 +44,4 @@ process.on("message", data => {
     if (source === undefined) return readFile.apply(this, arguments);
     setImmediate(() => arguments[arguments.length - 1](null, source));
   };
-  // Load entry file from assets.
-  require(entry);
-});
+}

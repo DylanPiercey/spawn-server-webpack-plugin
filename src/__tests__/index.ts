@@ -6,26 +6,29 @@ import fetch from "node-fetch";
 import webpack from "webpack";
 import SpawnServerPlugin from "../";
 
-test("Spawn Server Plugin", async () => {
-  const entry = "/index.js";
-  const vol = Volume.fromJSON({
-    [entry]: createServerBoilerplate("hi")
-  })
-  const server = createBundledServer(vol, entry);
-
-  try {
-    await pEvent(server, "listening");
-    expect(await (await fetch("http://localhost:3000")).text()).toEqual("hi");
+describe("Spawn Server Plugin", () => {
+  it("loads server and restarts with changes in watch mode", async () => {
+    const entry = "/index.js";
+    const vol = Volume.fromJSON({
+      [entry]: createServerBoilerplate("hi")
+    })
+    const server = createBundledServer(vol, entry);
   
-    vol.writeFileSync(entry, createServerBoilerplate("updated"));
-    server.invalidate();
-    await pEvent(server, "listening");
-
-    expect(await (await fetch("http://localhost:3000")).text()).toEqual("updated");
-  } finally {
-    await server.close();
-  }
+    try {
+      await pEvent(server, "listening");
+      expect(await (await fetch("http://localhost:3000")).text()).toEqual("hi");
+    
+      vol.writeFileSync(entry, createServerBoilerplate("updated"));
+      server.invalidate();
+      await pEvent(server, "listening");
+  
+      expect(await (await fetch("http://localhost:3000")).text()).toEqual("updated");
+    } finally {
+      await server.close();
+    }
+  });
 });
+
 
 function createBundledServer(vol: ReturnType<typeof Volume.fromJSON>, entry: string) {
   (vol as typeof vol & { join: typeof path.join }).join = path.join.bind(path);
@@ -35,7 +38,7 @@ function createBundledServer(vol: ReturnType<typeof Volume.fromJSON>, entry: str
     entry,
     watch: true,
     target: "node",
-    plugins: [server],
+    plugins: [server, new webpack.HotModuleReplacementPlugin()],
     mode: "development",
     externals: [/^[^./!]/],
     output: {
@@ -53,7 +56,7 @@ function createBundledServer(vol: ReturnType<typeof Volume.fromJSON>, entry: str
     if (err) {
       emitter.emit("error", err);
     } else {
-      server.once("listening", () => emitter.emit("listening"));
+      emitter.emit("listening");
     }
   });
 
