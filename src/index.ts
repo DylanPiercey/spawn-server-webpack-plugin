@@ -1,6 +1,6 @@
 import type { AddressInfo } from "net";
 import type { IncomingMessage, ServerResponse } from "http";
-import type { Compiler, Stats } from "webpack";
+import type { compilation, Compiler, Stats } from "webpack";
 import cluster, { Worker } from "cluster";
 import path from "path";
 import exitHook from "exit-hook";
@@ -11,7 +11,7 @@ const PLUGIN_NAME = "spawn-server-webpack-plugin";
 const EVENT = {
   RESTART: Symbol(),
   LISTENING: "listening",
-  CLOSING: "closing"
+  CLOSING: "closing",
 } as const;
 
 /**
@@ -35,12 +35,12 @@ class SpawnServerPlugin extends EventEmitter {
             console.error(err);
           } else {
             res.writeHead(200, {
-              Refresh: `0 url=${req.url!}`
+              Refresh: `0 url=${req.url!}`,
             });
             res.end();
           }
-        }
-      }
+        },
+      },
     },
     before: (
       app: unknown & {
@@ -58,7 +58,7 @@ class SpawnServerPlugin extends EventEmitter {
         if (this.listening) next();
         else this.once("listening", next);
       });
-    }
+    },
   };
   private _started = false;
   private _worker: Worker | null = null;
@@ -126,8 +126,8 @@ class SpawnServerPlugin extends EventEmitter {
       // Send compiled javascript to child process.
       this._worker.send({
         action: "spawn",
-        assets: toSources(stats.compilation.assets),
-        entry: path.join(options.output!.path!, mainChunk)
+        assets: toSources(stats.compilation),
+        entry: path.join(options.output!.path!, mainChunk),
       });
 
       if (this._options.waitForAppReady) {
@@ -185,14 +185,15 @@ class SpawnServerPlugin extends EventEmitter {
 /**
  * Converts webpack assets into a searchable map.
  */
-function toSources(
-  assets: Record<string, { existsAt: string; source: () => string }>
-) {
+function toSources(compilation: compilation.Compilation) {
+  const { outputPath } = compilation.compiler;
+  const fs = (compilation.compiler
+    .outputFileSystem as any) as typeof import("fs");
   const result: Record<string, string> = {};
 
-  for (const key in assets) {
-    const asset = assets[key];
-    result[asset.existsAt] = asset.source();
+  for (const assetPath in compilation.assets) {
+    const existsAt = path.join(outputPath, assetPath);
+    result[existsAt] = fs.readFileSync(existsAt, "utf-8");
   }
 
   return result;
