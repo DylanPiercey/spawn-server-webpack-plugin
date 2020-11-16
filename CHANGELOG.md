@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.3](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v5.0.2...v5.0.3) (2020-11-16)
+
+
+### Bug Fixes
+
+* webpack 5 support ([12e1f49](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/12e1f497427a5cc2e6d212664d4adc15482558e6))
+
 ### [5.0.2](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v5.0.1...v5.0.2) (2020-09-10)
 
 
