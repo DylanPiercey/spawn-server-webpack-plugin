@@ -188,12 +188,15 @@ class SpawnServerPlugin extends EventEmitter {
 function toSources(compilation: compilation.Compilation) {
   const { outputPath } = compilation.compiler;
   const fs = (compilation.compiler
-    .outputFileSystem as any) as typeof import("fs");
+    .outputFileSystem as unknown) as typeof import("fs");
   const result: Record<string, string> = {};
 
   for (const assetPath in compilation.assets) {
-    const existsAt = path.join(outputPath, assetPath);
-    result[existsAt] = fs.readFileSync(existsAt, "utf-8");
+    const asset = compilation.assets[assetPath];
+    const existsAt = asset.existsAt || path.join(outputPath, assetPath);
+    result[existsAt] = fs.readFileSync
+      ? fs.readFileSync(existsAt, "utf-8")
+      : asset.source();
   }
 
   return result;
