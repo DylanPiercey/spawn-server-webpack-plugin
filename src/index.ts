@@ -192,8 +192,9 @@ function toSources(compilation: compilation.Compilation) {
   const result: Record<string, string> = {};
 
   for (const assetPath in compilation.assets) {
-    const existsAt = path.join(outputPath, assetPath);
-    result[existsAt] = fs.readFileSync(existsAt, "utf-8");
+    const asset = compilation.assets[assetPath];
+    const existsAt = asset.existsAt || path.join(outputPath, assetPath);
+    result[existsAt] = fs.readFileSync ? fs.readFileSync(existsAt, "utf-8") : asset.source();
   }
 
   return result;
