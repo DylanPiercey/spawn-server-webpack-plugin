@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.5](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v5.0.3...v5.0.5) (2021-02-02)
+
+
+### Bug Fixes
+
+* regression with webpack 4 ([66b4650](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/66b4650222123bf648084545aacdd4cf247f3f9d))
+* remove deprecation warning when used with webpack 5 ([3d8b1c7](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/3d8b1c71c2ecc0746f60d2aa4a32472f5acf768a))
+
 ### [5.0.3](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v5.0.2...v5.0.3) (2020-11-16)
 
 
