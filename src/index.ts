@@ -101,9 +101,19 @@ class SpawnServerPlugin extends EventEmitter {
     this._close(() => {
       // Server is started based off files emitted from the main entry.
       // eslint-disable-next-line
-      const mainChunk = stats.compilation.entrypoints
+
+      let mainChunk: string | undefined = undefined;
+      // eslint-disable-next-line
+      const files = stats.compilation.entrypoints
         .get(this._options.mainEntry)
-        ?.getRuntimeChunk().files[0] as string;
+        ?.getRuntimeChunk().files;
+
+      if (files) {
+        // Read the first file using iteration protocol.
+        // webpack 5 uses a Set, while webpack 4 uses an array.
+        // This will work for both and is more efficient.
+        for (mainChunk of files) break;
+      }
 
       if (!mainChunk) {
         throw new Error(
