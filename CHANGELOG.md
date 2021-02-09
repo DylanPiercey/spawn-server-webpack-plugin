@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.6](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v5.0.5...v5.0.6) (2021-02-09)
+
+
+### Bug Fixes
+
+* issue with absolute asset paths ([a9f952c](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/a9f952c54f8cb33bd2ef829abe85fce8a0355590))
+
 ### [5.0.5](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v5.0.3...v5.0.5) (2021-02-02)
 
 
