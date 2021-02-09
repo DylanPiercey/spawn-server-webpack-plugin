@@ -137,7 +137,9 @@ class SpawnServerPlugin extends EventEmitter {
       this._worker.send({
         action: "spawn",
         assets: toSources(stats.compilation),
-        entry: path.join(options.output!.path!, mainChunk),
+        entry: path.isAbsolute(mainChunk)
+          ? mainChunk
+          : path.join(options.output!.path!, mainChunk),
       });
 
       if (this._options.waitForAppReady) {
@@ -203,7 +205,11 @@ function toSources(compilation: compilation.Compilation) {
 
   for (const assetPath in compilation.assets) {
     const asset = compilation.assets[assetPath];
-    const existsAt = asset.existsAt || path.join(outputPath, assetPath);
+    const existsAt =
+      asset.existsAt ||
+      (path.isAbsolute(assetPath)
+        ? assetPath
+        : path.join(outputPath, assetPath));
     result[existsAt] = fs.readFileSync
       ? fs.readFileSync(existsAt, "utf-8")
       : asset.source();
