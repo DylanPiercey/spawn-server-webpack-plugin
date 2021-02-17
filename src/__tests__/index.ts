@@ -9,25 +9,30 @@ import SpawnServerPlugin from "../";
 test("Spawn Server Plugin", async () => {
   const entry = "/index.js";
   const vol = Volume.fromJSON({
-    [entry]: createServerBoilerplate("hi")
-  })
+    [entry]: createServerBoilerplate("hi"),
+  });
   const server = createBundledServer(vol, entry);
 
   try {
     await pEvent(server, "listening");
     expect(await (await fetch("http://localhost:3000")).text()).toEqual("hi");
-  
+
     vol.writeFileSync(entry, createServerBoilerplate("updated"));
     server.invalidate();
     await pEvent(server, "listening");
 
-    expect(await (await fetch("http://localhost:3000")).text()).toEqual("updated");
+    expect(await (await fetch("http://localhost:3000")).text()).toEqual(
+      "updated"
+    );
   } finally {
     await server.close();
   }
 });
 
-function createBundledServer(vol: ReturnType<typeof Volume.fromJSON>, entry: string) {
+function createBundledServer(
+  vol: ReturnType<typeof Volume.fromJSON>,
+  entry: string
+) {
   (vol as typeof vol & { join: typeof path.join }).join = path.join.bind(path);
   const emitter = new EventEmitter();
   const server = new SpawnServerPlugin();
@@ -40,15 +45,16 @@ function createBundledServer(vol: ReturnType<typeof Volume.fromJSON>, entry: str
     externals: [/^[^./!]/],
     output: {
       libraryTarget: "commonjs2",
-      path: "/"
-    }
-  })
+      path: "/",
+    },
+  });
 
   compiler.inputFileSystem = vol as typeof compiler.inputFileSystem;
-  compiler.outputFileSystem = vol as unknown as typeof compiler.outputFileSystem;
+  compiler.outputFileSystem = (vol as unknown) as typeof compiler.outputFileSystem;
 
   const watcher = compiler.watch({}, (err, stats) => {
-    err = err || (stats.hasErrors() && new Error(stats.toString("errors-only")));
+    err =
+      err || (stats.hasErrors() && new Error(stats.toString("errors-only")));
 
     if (err) {
       emitter.emit("error", err);
@@ -59,11 +65,11 @@ function createBundledServer(vol: ReturnType<typeof Volume.fromJSON>, entry: str
 
   return Object.assign(emitter, {
     close() {
-      return new Promise(resolve => watcher.close(resolve));
+      return new Promise((resolve) => watcher.close(() => resolve(undefined)));
     },
     invalidate() {
       watcher.invalidate();
-    }
+    },
   });
 }
 
@@ -71,6 +77,8 @@ function createServerBoilerplate(msg: string) {
   return `
   require("http").createServer((req, res) => {
     res.end(${JSON.stringify(msg)});
-  }).listen(3000);
-  `
+  }).listen(3000, function () {
+    attachDevServer(this.address());
+  });
+  `;
 }

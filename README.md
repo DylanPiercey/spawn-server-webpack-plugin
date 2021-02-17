@@ -1,6 +1,7 @@
 # Spawn Server (Webpack Plugin)
 
 Webpack plugin for Node builds that will automatically load the build into memory when watching and restart the server on consecutive builds.
+Under the hood this module uses `worker_threads` and requires node >= 10.
 
 # Installation
 
@@ -47,15 +48,10 @@ webpack(config).watch({ ignore: /node_modules/ }, (err, stats) => {
   // The built node server will start running in the background.
 });
 
-// Special events (listening and closing)
+// Listen for server start (emitted once for every build)
 spawnedServer.on("listening", (address) => {
-  this.address === { port: ..., ip: ... }
+  this.address === { port: ..., address: ... }
   this.listening === true
-});
-
-spawnedServer.on("closing", () => {
-  this.address === null
-  this.listening === false
 });
 ```
 
@@ -90,7 +86,28 @@ new DevServer(webpack(configs), {
 }).listen(8081);
 ```
 
-You can also add this configuration in the same way into the `webpack.config.js` file under the `devServer` option.
+> _You can also add this configuration in the same way into the `webpack.config.js` file under the `devServer` option._
+
+Finally you must call the `attachDevServer` global function added by this plugin in your app with the `AddressInfo` for your app, here is an example http server:
+
+```js
+import http from "http";
+
+const server = http.createServer(
+  (req, res) => {
+    // ...
+  },
+  () => {
+    const address = server.address();
+
+    if (global.attachDevServer) {
+      global.attachDevServer(address);
+    }
+
+    console.log(`Server started on ${address.address}:${address.port}`);
+  }
+);
+```
 
 ### Multiple entry points
 
@@ -118,10 +135,6 @@ module.exports = {
 #### Dynamic Server Port
 
 Using the `devServerConfig` will automatically set `process.env.PORT = 0`. This allows for the spawned server to start on the next available port if you use this environment variable as the port option when listening.
-
-#### Process with multiple servers
-
-By default this plugin will wait for the first http server to be listening and make that information available as the `address`. You can optionally provide a `waitForAppReady: true` option when instanciating the plugin and use `process.send({ event: "app-ready", address: server.address() })` within your process to signal which server should be referenced.
 
 ### Contributions
 

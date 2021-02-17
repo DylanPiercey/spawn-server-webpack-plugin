@@ -1,7 +1,7 @@
 import type { AddressInfo } from "net";
 import type { IncomingMessage, ServerResponse } from "http";
 import type { compilation, Compiler, Stats } from "webpack";
-import cluster, { Worker } from "cluster";
+import { Worker } from "worker_threads";
 import path from "path";
 import exitHook from "exit-hook";
 import { EventEmitter } from "events";
@@ -9,10 +9,21 @@ const WORKER_FILE = require.resolve("./worker");
 const WATCHING_COMPILERS = new WeakSet();
 const PLUGIN_NAME = "spawn-server-webpack-plugin";
 const EVENT = {
-  RESTART: Symbol(),
   LISTENING: "listening",
-  CLOSING: "closing",
 } as const;
+
+export type attachDevServer = (address: AddressInfo) => void;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace NodeJS {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    interface Global {
+      attachDevServer?: attachDevServer;
+    }
+  }
+}
 
 /**
  * Creates a webpack plugin that will automatically run the build in a child process.
@@ -60,7 +71,6 @@ class SpawnServerPlugin extends EventEmitter {
       });
     },
   };
-  private _started = false;
   private _worker: Worker | null = null;
   constructor(
     private _options: {
@@ -73,13 +83,13 @@ class SpawnServerPlugin extends EventEmitter {
     _options.mainEntry = _options.mainEntry || "main";
     _options.args = _options.args || [];
     this._options = _options;
-    exitHook(this._close);
+    exitHook(this._terminate);
   }
 
   // Starts plugin.
   public apply(compiler: Compiler): void {
     compiler.hooks.done.tap(PLUGIN_NAME, this._reload);
-    compiler.hooks.watchClose.tap(PLUGIN_NAME, this._close);
+    compiler.hooks.watchClose.tap(PLUGIN_NAME, this._terminate);
     compiler.hooks.make.tap(PLUGIN_NAME, () => (this.listening = false)); // Mark the server as not listening while we try to rebuild.
     compiler.hooks.watchRun.tap(PLUGIN_NAME, () =>
       WATCHING_COMPILERS.add(compiler)
@@ -98,7 +108,7 @@ class SpawnServerPlugin extends EventEmitter {
     if (stats.hasErrors()) return;
 
     // Kill existing process.
-    this._close(() => {
+    this._terminate(() => {
       // Server is started based off files emitted from the main entry.
       // eslint-disable-next-line
 
@@ -123,64 +133,41 @@ class SpawnServerPlugin extends EventEmitter {
         );
       }
 
-      // Update cluster settings to load empty file and use provided args.
-      const originalExec = cluster.settings.exec;
-      const originalArgs = cluster.settings.execArgv;
-      cluster.settings.exec = WORKER_FILE;
-      cluster.settings.execArgv = this._options.args;
-
       // Start new process.
-      this._started = true;
-      this._worker = cluster.fork();
-
-      // Send compiled javascript to child process.
-      this._worker.send({
-        action: "spawn",
-        assets: toSources(stats.compilation),
-        entry: path.isAbsolute(mainChunk)
-          ? mainChunk
-          : path.join(options.output!.path!, mainChunk),
+      this._worker = new Worker(WORKER_FILE, {
+        execArgv: this._options.args,
+        workerData: {
+          assets: toSources(stats.compilation),
+          entry: path.isAbsolute(mainChunk)
+            ? mainChunk
+            : path.join(options.output!.path!, mainChunk),
+        },
       });
 
-      if (this._options.waitForAppReady) {
-        const checkMessage = (data: Record<string, unknown>) => {
-          if (data && data.event === "app-ready") {
-            this._onListening(data.address as AddressInfo);
-            this._worker!.removeListener("message", checkMessage);
-          }
-        };
-        this._worker.on("message", checkMessage);
-      } else {
-        // Trigger listening event once any server starts.
-        this._worker.once("listening", this._onListening);
-      }
+      this._worker.once("exit", () => {
+        this._worker = null;
+        this.listening = false;
+      });
 
-      // Reset cluster settings.
-      cluster.settings.exec = originalExec;
-      cluster.settings.execArgv = originalArgs;
+      const checkMessage = (address: Record<string, unknown>) => {
+        if (isAddressInfo(address)) {
+          this._onListening(address);
+          this._worker!.removeListener("message", checkMessage);
+        }
+      };
+
+      this._worker.on("message", checkMessage);
     });
   };
   // Kills any running child process.
-  private _close = (done?: () => void): void => {
-    if (!this._started) {
-      done && setImmediate(done);
+  private _terminate = (done?: () => void): void => {
+    if (!this._worker) {
+      done && queueMicrotask(done);
       return;
     }
 
-    // Check if we need to close the existing server.
-    if (this._worker!.isDead()) {
-      done && setImmediate(done);
-    } else {
-      this._worker!.once("exit", () => this.emit(EVENT.RESTART));
-      process.kill(this._worker!.process.pid);
-    }
-
     this.listening = false;
-    this.emit(EVENT.CLOSING);
-
-    // Ensure that we only start the most recent router.
-    this.removeAllListeners(EVENT.RESTART);
-    done && this.once(EVENT.RESTART, done);
+    this._worker.terminate().then(done, done);
   };
 
   /**
@@ -188,6 +175,7 @@ class SpawnServerPlugin extends EventEmitter {
    * Saves the server address.
    */
   private _onListening = (address: AddressInfo): void => {
+    console.log(address);
     this.listening = true;
     this.address = address;
     this.emit(EVENT.LISTENING);
@@ -216,6 +204,14 @@ function toSources(compilation: compilation.Compilation) {
   }
 
   return result;
+}
+
+function isAddressInfo(data: unknown): data is AddressInfo {
+  return (
+    data !== undefined &&
+    (data as AddressInfo).address !== undefined &&
+    (data as AddressInfo).port !== undefined
+  );
 }
 
 typeof module === "object" && (module.exports = exports = SpawnServerPlugin);

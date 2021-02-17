@@ -2,35 +2,47 @@
 "use strict";
 const fs = require("fs");
 const Module = require("module");
+const {
+  workerData: { entry, assets },
+  parentPort,
+} = require("worker_threads");
 
-process.on("message", data => {
-  if (!data || data.action !== "spawn") return;
-  // Monkey patch asset loading.
-  const entry = data.entry;
-  const assets = data.assets;
-  // Pretend files from memory exist on disc.
-  const findPath = Module._findPath;
-  Module._findPath = function (...args) {
-    const file = args[0];
-    return assets[file] === undefined ? findPath.apply(this, args) : file;
-  };
-  // Patches target 'node' System.import calls.
-  const readFileSync = fs.readFileSync;
-  fs.readFileSync = function (...args) {
-    return assets[args[0]] || readFileSync.apply(this, args);
-  };
-  // Allows for source-map-support.
-  const existsSync = fs.existsSync;
-  fs.existsSync = function (file) {
-    return assets[file] !== undefined || existsSync.apply(this, arguments);
-  };
-  // Patches target 'async-node' System.import calls.
-  const readFile = fs.readFile;
-  fs.readFile = function (file) {
-    const source = assets[file];
-    if (source === undefined) return readFile.apply(this, arguments);
-    setImmediate(() => arguments[arguments.length - 1](null, source));
-  };
-  // Load entry file from assets.
-  require(entry);
-});
+global.attachDevServer = (address) => {
+  if (
+    !(address && address.port !== undefined && address.address !== undefined)
+  ) {
+    throw new Error(
+      `attachDevServer(address) must be passed valid address info from a node server, got ${JSON.stringify(
+        address
+      )}`
+    );
+  }
+
+  parentPort.postMessage(address);
+};
+
+// Monkey patch asset loading.
+// Pretend files from memory exist on disc.
+const { _findPath } = Module;
+Module._findPath = function (file) {
+  return assets[file] === undefined ? _findPath.apply(this, arguments) : file;
+};
+
+const { readFileSync, readFile, existsSync } = fs;
+// Patches target 'node' System.import calls.
+fs.readFileSync = function (file) {
+  return assets[file] || readFileSync.apply(this, arguments);
+};
+// Allows for source-map-support.
+fs.existsSync = function (file) {
+  return assets[file] !== undefined || existsSync.apply(this, arguments);
+};
+// Patches target 'async-node' System.import calls.
+fs.readFile = function (file) {
+  const source = assets[file];
+  if (source === undefined) return readFile.apply(this, arguments);
+  setImmediate(() => arguments[arguments.length - 1](null, source));
+};
+
+// Load entry file from assets.
+require(entry);
