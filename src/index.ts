@@ -47,10 +47,21 @@ class SpawnServerPlugin extends EventEmitter {
             res.end();
           }
         },
+        headers: {
+          "X-Spawned-Server-Proxy": "1",
+        },
       },
     },
     onBeforeSetupMiddleware(): void {
       process.env.PORT = "0";
+
+      if ((this as any).https && Array.isArray(this.proxy)) {
+        for (const proxy of this.proxy) {
+          if (proxy.headers && proxy.headers["X-Spawned-Server-Proxy"]) {
+            proxy.headers["X-Forwarded-Proto"] = "https";
+          }
+        }
+      }
     },
   };
   private _started = false;
