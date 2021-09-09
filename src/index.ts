@@ -25,7 +25,14 @@ class SpawnServerPlugin extends EventEmitter {
       "**": {
         target: true,
         logLevel: "silent",
-        router: (): string => `http://127.0.0.1:${this.address!.port}`,
+        router: (): string | Promise<string> => {
+          if (this.listening) return getAddress(this);
+          return new Promise<string>((resolve) => {
+            this.once("listening", () => {
+              resolve(getAddress(this));
+            });
+          });
+        },
         onError: (
           err: Error,
           req: IncomingMessage,
@@ -42,22 +49,8 @@ class SpawnServerPlugin extends EventEmitter {
         },
       },
     },
-    before: (
-      app: unknown & {
-        use: (
-          fn: (
-            req: IncomingMessage,
-            res: ServerResponse,
-            next: () => void
-          ) => void
-        ) => void;
-      }
-    ): void => {
+    onBeforeSetupMiddleware(): void {
       process.env.PORT = "0";
-      app.use((req, res, next) => {
-        if (this.listening) next();
-        else this.once("listening", next);
-      });
     },
   };
   private _started = false;
@@ -192,6 +185,10 @@ class SpawnServerPlugin extends EventEmitter {
     this.address = address;
     this.emit(EVENT.LISTENING);
   };
+}
+
+function getAddress(plugin: SpawnServerPlugin) {
+  return `http://127.0.0.1:${plugin.address!.port}`;
 }
 
 /**

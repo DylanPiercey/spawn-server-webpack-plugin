@@ -10,6 +10,11 @@ Webpack plugin for Node builds that will automatically load the build into memor
 npm install spawn-server-webpack-plugin
 ```
 
+#### webpack-dev-server version
+
+`webpack-dev-server` >= 4 requires v6 of this module.
+`webpack-dev-server` <= 3 requires v5 of this module.
+
 # Example Config
 
 ```javascript
