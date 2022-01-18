@@ -23,6 +23,7 @@ class SpawnServerPlugin extends EventEmitter {
   public devServerConfig = {
     proxy: {
       "**": {
+        xfwd: true,
         target: true,
         logLevel: "silent",
         router: (): string | Promise<string> => {
@@ -47,21 +48,7 @@ class SpawnServerPlugin extends EventEmitter {
             res.end();
           }
         },
-        headers: {
-          "X-Spawned-Server-Proxy": "1",
-        },
       },
-    },
-    onBeforeSetupMiddleware(): void {
-      process.env.PORT = "0";
-
-      if ((this as any).https && Array.isArray(this.proxy)) {
-        for (const proxy of this.proxy) {
-          if (proxy.headers && proxy.headers["X-Spawned-Server-Proxy"]) {
-            proxy.headers["X-Forwarded-Proto"] = "https";
-          }
-        }
-      }
     },
   };
   private _started = false;
@@ -135,7 +122,7 @@ class SpawnServerPlugin extends EventEmitter {
 
       // Start new process.
       this._started = true;
-      this._worker = cluster.fork();
+      this._worker = cluster.fork(Object.assign({ PORT: 0 }, process.env));
 
       // Send compiled javascript to child process.
       this._worker.send({
