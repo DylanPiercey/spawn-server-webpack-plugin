@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.2.0](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.1.0...v6.2.0) (2022-01-18)
+
+
+### Features
+
+* use xfwd option to avoid deprecated devServer opts ([a705712](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/a70571214dfff1bd9bab8a644f3e3ccb1c63c9ef))
+
 ## [6.1.0](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.0.0...v6.1.0) (2021-09-09)
 
 
