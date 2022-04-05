@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.2.1](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.2.0...v6.2.1) (2022-04-05)
+
+
+### Bug Fixes
+
+* issue with webpack double executing reload and ensure child process always killed ([aa7e983](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/aa7e9835d0ab92dcdcc6e9a1cd24b9aa49879e84))
+
 ## [6.2.0](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.1.0...v6.2.0) (2022-01-18)
 
 
