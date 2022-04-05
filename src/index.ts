@@ -51,6 +51,7 @@ class SpawnServerPlugin extends EventEmitter {
       },
     },
   };
+  private _hash = "";
   private _started = false;
   private _worker: Worker | null = null;
   constructor(
@@ -79,7 +80,8 @@ class SpawnServerPlugin extends EventEmitter {
 
   // Loads output from memory into a new node process.
   private _reload = (stats: Stats): void => {
-    const compiler = stats.compilation.compiler;
+    const compilation = stats.compilation;
+    const compiler = compilation.compiler;
     const options = compiler.options;
 
     // Only runs in watch mode.
@@ -87,6 +89,10 @@ class SpawnServerPlugin extends EventEmitter {
 
     // Don't reload if there was errors.
     if (stats.hasErrors()) return;
+
+    // For some reason webpack can output a done event twice for the same compilation...
+    if (compilation.hash === this._hash) return;
+    this._hash = compilation.hash!;
 
     // Kill existing process.
     this._close(() => {
@@ -154,16 +160,16 @@ class SpawnServerPlugin extends EventEmitter {
   // Kills any running child process.
   private _close = (done?: () => void): void => {
     if (!this._started) {
-      done && setImmediate(done);
+      done && done();
       return;
     }
 
     // Check if we need to close the existing server.
     if (this._worker!.isDead()) {
-      done && setImmediate(done);
+      done && setImmediate(() => this.emit(EVENT.RESTART));
     } else {
       this._worker!.once("exit", () => this.emit(EVENT.RESTART));
-      process.kill(this._worker!.process.pid);
+      this._worker!.kill("SIGKILL");
     }
 
     this.listening = false;
