@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.2.2](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.2.1...v6.2.2) (2022-06-14)
+
+
+### Bug Fixes
+
+* switch to asset content hash instead of compilation hash ([a4ef44d](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/a4ef44d6e25e5dc86c38de957e2805eb18a7242c))
+
 ### [6.2.1](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.2.0...v6.2.1) (2022-04-05)
 
 
