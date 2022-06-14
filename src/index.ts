@@ -1,6 +1,7 @@
 import type { AddressInfo } from "net";
 import type { IncomingMessage, ServerResponse } from "http";
 import type { compilation, Compiler, Stats } from "webpack";
+import crypto from "crypto";
 import cluster, { Worker } from "cluster";
 import path from "path";
 import exitHook from "exit-hook";
@@ -90,9 +91,10 @@ class SpawnServerPlugin extends EventEmitter {
     // Don't reload if there was errors.
     if (stats.hasErrors()) return;
 
+    const { assets, hash } = toSources(stats.compilation);
     // For some reason webpack can output a done event twice for the same compilation...
-    if (compilation.hash === this._hash) return;
-    this._hash = compilation.hash!;
+    if (hash === this._hash) return;
+    this._hash = hash;
 
     // Kill existing process.
     this._close(() => {
@@ -133,7 +135,7 @@ class SpawnServerPlugin extends EventEmitter {
       // Send compiled javascript to child process.
       this._worker.send({
         action: "spawn",
-        assets: toSources(stats.compilation),
+        assets,
         entry: path.isAbsolute(mainChunk)
           ? mainChunk
           : path.join(options.output!.path!, mainChunk),
@@ -202,7 +204,8 @@ function toSources(compilation: compilation.Compilation) {
   const { outputPath } = compilation.compiler;
   const fs = (compilation.compiler
     .outputFileSystem as unknown) as typeof import("fs");
-  const result: Record<string, string> = {};
+  const assets: Record<string, string> = {};
+  const hash = crypto.createHash("md5");
 
   for (const assetPath in compilation.assets) {
     const asset = compilation.assets[assetPath];
@@ -211,12 +214,17 @@ function toSources(compilation: compilation.Compilation) {
       (path.isAbsolute(assetPath)
         ? assetPath
         : path.join(outputPath, assetPath));
-    result[existsAt] = fs.readFileSync
+    const source = fs.readFileSync
       ? fs.readFileSync(existsAt, "utf-8")
       : asset.source();
+    assets[existsAt] = source;
+    hash.update(existsAt).update(source);
   }
 
-  return result;
+  return {
+    hash: hash.digest("hex"),
+    assets,
+  };
 }
 
 typeof module === "object" && (module.exports = exports = SpawnServerPlugin);
