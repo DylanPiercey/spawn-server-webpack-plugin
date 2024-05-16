@@ -22,10 +22,9 @@ class SpawnServerPlugin extends EventEmitter {
   public listening = true;
   public address: null | AddressInfo = null;
   public devServerConfig = {
-    proxy: {
-      "**": {
+    proxy: [
+      {
         xfwd: true,
-        target: true,
         logLevel: "silent",
         router: (): string | Promise<string> => {
           if (this.listening) return getAddress(this);
@@ -50,7 +49,7 @@ class SpawnServerPlugin extends EventEmitter {
           }
         },
       },
-    },
+    ],
   };
   private _hash = "";
   private _started = false;
