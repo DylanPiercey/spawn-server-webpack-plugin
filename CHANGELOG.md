@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.2.3](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.2.2...v6.2.3) (2024-05-16)
+
+
+### Bug Fixes
+
+* avoid deprecated webpack config ([769ed13](https://github.com/DylanPiercey/spawn-server-webpack-plugin/commit/769ed13977e188849350b5b3ccdbe5608ba31d50))
+
 ### [6.2.2](https://github.com/DylanPiercey/spawn-server-webpack-plugin/compare/v6.2.1...v6.2.2) (2022-06-14)
 
 
